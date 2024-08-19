@@ -1,31 +1,40 @@
-import React from 'react'
+import React, { useEffect,useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FaArrowRight } from "react-icons/fa";
-import Button from '../components/Button';
 import AdPlace from '../components/AdPlace';
 import { Footer } from '../components/Footer';
-import { useState } from 'react';
 import { motion } from 'framer-motion';
+import Inventory from '../components/Inventory';
+import Button from '../components/Button';
+import { getInventorys } from '../FirebaseFunctions';
 
 
 const InvertoryPage = () => {
   const inventorys = ['Default', 'Emoji', 'Minecraft'];
-  const [navbarSelect, setNavbarSelect] = useState('');
+  const [navbarSelect, setNavbarSelect] = useState('Default');
   const [navbaranimete,setNavbarAnimate] = useState("navbarhrinital");
-
-  const [subInventoryCategory,setSubInventoryCategory] = useState("Blocks")
+  
+  const [selected,SetSelected] = useState("Default")
+  const [isSelected,SetIsSelected] = useState(true)
 
   const handleOptionChange = (event) => {
     setNavbarSelect(event.target.value);
     
     if (event.target.value === 'Default') {
       setNavbarAnimate('navbarhrinitial');
+      event.target.value === selected ? SetIsSelected(true) : SetIsSelected(false)
     } else if (event.target.value === 'Emoji') {
       setNavbarAnimate('navbarhrfirst');
+      event.target.value === selected ? SetIsSelected(true) : SetIsSelected(false)
     } else if (event.target.value === 'Minecraft') {
       setNavbarAnimate('navbarhrthird');
+      event.target.value === selected ? SetIsSelected(true) : SetIsSelected(false)
     }
   };
+  
+  const handleSelectClick = () => {
+    SetSelected(navbarSelect);
+    SetIsSelected(true);
+  }
   
   const variants = {
     navbarhrinitial : {width: 70 ,x : 4 },
@@ -62,23 +71,9 @@ const InvertoryPage = () => {
         animate = {navbaranimete}
         className=' absolute mt-6 border-2 '/>
         </div>
-        <div className='relative bg-opacity-30 bg-bgdarkerdarkerblue border-2 my-8 p-4 ' style={{width : 920,height : 380, borderRadius: 25 , borderColor : '#643236', backdropFilter: 'blur(20px)'}}>
-          <h2 className='mx-3 mb-3 text-Error-text '>{subInventoryCategory}</h2>
-          <div className='relative w-full h-full max-h-60 bg-gray-600 my-3'>
-          <div className='absolute border-2 w-20 rotate-90 -left-6 top-16'/>
-
-          </div>
-          <div className='flex w-full'>
-            <Button className="relative w-24 h-7 ml-auto mr- text-sm " buttonText="Select"/>
-          </div>
-          <div className='flex justify-around w-full text-Error-text'>
-            <button>
-              <FaArrowRight className='rotate-180'/>
-            </button>
-            <button>
-              <FaArrowRight/>
-            </button>
-          </div>
+        <Inventory selectedInventory={navbarSelect}/>
+        <div className={`relative flex w-full -top-24 right-10 ${isSelected ? "opacity-10" : "opacity-100"}`}>
+          <Button className="relative w-24 h-7 ml-auto text-sm " buttonText="Select" onClick={handleSelectClick}/>
         </div>
       </div>
       <AdPlace width={160} height={550} className={"absolute end-6 top-14"} />

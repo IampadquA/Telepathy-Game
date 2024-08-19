@@ -7,6 +7,9 @@ import { FaArrowRight } from "react-icons/fa";
 import InvitePopup from '../components/InvitePopup';
 import LobbyPopup from '../components/LobbyPopup';
 import { Link } from 'react-router-dom'; 
+import { handleAuth , getPlayer , getAllPlayerIds } from '../FirebaseFunctions';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../firebase-config';
 
 
 const MotionButton = motion(Button);
@@ -25,11 +28,33 @@ const Homepage = () => {
     
     const [playerName,setPlayerName] = useState("")
     const [playerid, setPlayerId] = useState(0);
-    let player = {
-        name : "",
-        id : 0
-    }
-    const players_ids = [1234, 3235, 1256, 2355, 1325];
+    
+    useEffect(() => {
+        // onAuthStateChanged ile kullanıcıyı kontrol ediyoruz
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try{
+                    console.log("user is", user.uid)
+                    const playerData = await getPlayer(user.uid)
+                    setPlayerId(playerData.id);
+                    setPlayerName(playerData.userName);
+                    setIsClickedPlay(true);
+                    setIsSubmitInput(true);
+                } catch (err){
+                    console.error(err)
+                }
+            } else {
+                console.log('No user is signed in');
+                // Kullanıcı çıkış yaptıysa veya giriş yapmamışsa burası çalışır
+                setPlayerId(null);
+                setPlayerName('');
+                setIsClickedPlay(false);
+                setIsSubmitInput(true);
+            }
+        });
+
+        return () => unsubscribe();
+    },[])
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -41,9 +66,18 @@ const Homepage = () => {
         return () => clearTimeout(timer);
     }, [isClickedPlay]);
 
-    function handlePlayClick() {
+    async function handlePlayClick() {
         setAnimationState('hidden');
-        setPlayerId(giveId(players_ids));
+        try{
+            const playerIds = await getAllPlayerIds();
+
+            const playerIdsArray = Array.from(playerIds);
+
+            const newId = giveId(playerIdsArray)
+            setPlayerId(newId);
+        } catch (err){
+            console.error(err);
+        }
         setTimeout(() => {setIsClickedPlay(true); setIsSubmitInput(false)}, 500);
         setAnimationState2("visiblein")
     }
@@ -67,7 +101,7 @@ const Homepage = () => {
             console.log('Enter key pressed');
             console.log('Input value:', playerName);
 
-            mergePlayer();
+            handleAuth(playerid,playerName)
             
             setAnimationState2("hidden")
             
@@ -85,15 +119,12 @@ const Homepage = () => {
         }
     };
 
-    function mergePlayer(playerName,playerId) {
-        player.name = playerName;
-        player.id = playerId;
-        /* Send it to the Database*/
-    }
-
     function giveId(players_ids) {
+        console.log("It works" ,players_ids);
+
         const MIN_ID = 1000;
         const MAX_ID = 9999;
+
 
         let newId;
         let isUnique = false;
@@ -109,6 +140,7 @@ const Homepage = () => {
         players_ids.push(newId);
         return newId;
     }
+    
 
     const variants = {
         hidden: { height: 0 },
