@@ -1,20 +1,32 @@
-import React, { useState } from 'react'
+import React, { useEffect, useLayoutEffect, useState } from 'react'
 import {motion} from "framer-motion"
 import { FaXmark } from "react-icons/fa6";
+import { deleteLobbyByUid, updatePlayerStatus, setLobbyInfo, updateLobbyStatus } from '../FirebaseFunctions';
 
-const LobbyPopup = ({handleLobbyClick , handleAfterInvite}) => {
+const LobbyPopup = ({handleLobbyClick , setIsInLobby , lobbyData}) => {
+    const [_lobbyData,_setLobbyData] = useState({players : []})
+   
+    useEffect(() => {
+        _setLobbyData(lobbyData);
+        console.log('LobbyPopupData' , _lobbyData);
+    }, [])
 
-    const lobbyList = [
-        { id : 2345 , name : "IampadquA" },
-        { id : 3225 , name : "MertyquA" },
-    ]
 
-    function handleQuitLobby(){
+    async function handleQuitLobby(){
+        await updateLobbyStatus(_lobbyData.lobbyUid,'playerLeftLobby');
+        console.log('lobby status changed');
+        await deleteLobbyByUid(_lobbyData.lobbyUid);
+        await updatePlayerStatus('idle');
+        setIsInLobby(false);
         handleLobbyClick();
-        handleAfterInvite();
+        setLobbyInfo({
+            lobbyUid : "",
+            player1: "", // useContext kurdugunda burayi duzetl
+            player2: "",
+            inventoryType: "default",
+        });
     }
 
-    const [inventoryMode, setInventoryMode] = useState("Default")
 
   return (
     <motion.div className='absolute w-full flex flex-col bg-bgdarkerblue bg-opacity-70 content-center top-1/4 border-2' style={{maxWidth: 460,height: 255,borderRadius: 25,borderColor : "#3C3C3C", backdropFilter: 'blur(20px)'}}>
@@ -22,15 +34,15 @@ const LobbyPopup = ({handleLobbyClick , handleAfterInvite}) => {
                 <FaXmark className='w-4 h-4' onClick={handleLobbyClick}/>
         </button>
         <div className='flex flex-col w-full gap-3 px-6 py-7 '>
-            {lobbyList.map(player => (
+            {_lobbyData.players.map(player => (
             <div key={player.id} className='flex flex-row w-full items-center'>
                 <img className='w-12 h-12 bg-gray-500 'style={{borderRadius : 50}} />
                     <h3 className='text-txtwh text-base font mx-4'>
-                        {player.name} &nbsp; #{player.id}
+                        {player.playerName} &nbsp; #{player.id}
                     </h3>
             </div>
             ))}
-            <div className='text-txtwh text-base font mt-2' >Inventory Mode:  &nbsp;<div className=' inline-block'> {inventoryMode}</div></div>
+            <div className='text-txtwh text-base font mt-2' >Inventory Mode:  &nbsp;<div className=' inline-block'> {lobbyData.inventoryType}</div></div>
         </div>
         <button className='relative text-Error-text ml-auto mr-11 bottom-3' onClick={handleQuitLobby}>Quit Lobby</button>
     </motion.div>

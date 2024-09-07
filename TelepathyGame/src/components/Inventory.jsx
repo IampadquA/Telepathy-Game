@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { useState ,useCallback } from 'react'
 import { FaArrowRight } from "react-icons/fa";
 import {motion} from "framer-motion"
-import { getInventory,getInventorys } from '../FirebaseFunctions';
+import { getInventory , getInventorys } from '../FirebaseFunctions';
 
 const Inventory = ( {selectedInventory} ) => {
 
@@ -26,7 +26,7 @@ const Inventory = ( {selectedInventory} ) => {
         if (selectedInventory){
           const inventoryItems = await getInventory(selectedInventoryData.id,selectedInventory);
           console.log("Inventoryıtems" , inventoryItems)
-          SetItems(inventoryItems);
+          SetItems(inventoryItems.data);
           const subCategorys = selectedInventoryData.subCategorys;
           setSubInventoryCategorys(subCategorys);
           setSubInventoryCategory(subCategorys[0]);

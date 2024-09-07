@@ -3,46 +3,102 @@ import { motion } from 'framer-motion'
 import { useRef,useEffect } from 'react';
 import { FaArrowRight } from "react-icons/fa";
 import { FaXmark } from "react-icons/fa6";
+import { sendInvite, listenInviteStatus, getUserDataById, listenToInvitationStatus, updatePlayerStatus, getLobbyDataByUid, setLobbyInfo, deleteInvite } from '../FirebaseFunctions';
 
-const InvitePopup = ({handleInviteClick , handleAfterInvite} ) => {
+const InvitePopup = ({handleInviteClick , handleAfterInvite , senderId , setIsInLobby , setDoesHaveNotification , setLobbyData } ) => {
     const inputRef = useRef(null);
     const [succesMessage,setSuccesMessage] = useState(false)
     const [errorMessage,setErrorMessage] = useState(false)
+    const [errorText,setErrorText] = useState("Something Went Wrong");
     
-    const playersdb = [{
-        name : "MertyquA",
-        id: 3225}]
-    
-    const [opponentPlayer,setOpponentPlayer] = useState("")  
-    
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (inputRef.current) {
-                inputRef.current.focus();
-            }
-        }, 100);  // 100ms delay
-    
-        return () => clearTimeout(timer);
-    }, []);
+    const [opponentPlayer,setOpponentPlayer] = useState(""); 
+    const [receiverData,setReceiverData] = useState();
 
     function handleInputKeydown( event ){
         if (event.key === "Enter"){
            
-            handleInviteSubmit();
+            handleInviteSubmit(senderId);
         }
     }
 
-    function handleInviteSubmit(){
-        const matchedPlayer = opponentPlayer.trim().split("#")
-        console.log(matchedPlayer)
+    function checkandParseInput(input) {
+        const regex = /^[^\s#]{0,32}#[1-9][0-9]{3,5}$/;
 
-        if (playersdb.find(player => player.name === matchedPlayer[0] && player.id === Number(matchedPlayer[1]))){
-            showSuccesMessage()
-            //SendDatabase
-            handleAfterInvite()
+        if (!regex.test(input.trim())) {
+            return null;  
+        }
 
-        }else {
-            showErrorMessage()
+        const [username, id] = input.trim().split("#");
+        const receiverId = Number(id);
+
+        console.log("checkandParseInput is" , username , receiverId);
+        return { username, receiverId };
+    }
+
+    async function handleInviteSubmit(senderId) {
+        const opponentData = checkandParseInput(opponentPlayer);
+
+        if (!opponentData){
+            showErrorMessage("Invalid input format. Please ensure the username and ID are correctly formatted.");
+            return; 
+        }
+
+        const {receiverId} = opponentData; 
+
+        if (receiverId === senderId){
+            showErrorMessage("You can't Invite yourself (except one user) what are you tryna do ??");
+            return;
+        }
+        
+        let receiverDataRef;
+        try {
+            receiverDataRef = await getUserDataById(receiverId);
+        }catch (err) {
+            console.log("Player Not Found", err);
+            showErrorMessage("Player Not Found");
+            return;
+        }
+            
+        if (receiverDataRef.status !== "idle") {
+            showErrorMessage("Player already has an Invitation or Not avaible");
+            return;
+        }
+            
+        try {
+            console.log(receiverDataRef.Uid);
+            const result = await sendInvite(receiverDataRef.Uid);
+    
+            if (!result.success) {
+                showErrorMessage("Something went wrong");
+                console.log(result.message);
+                return;
+            }
+            
+            showSuccesMessage(result.message);
+            
+            console.log("Listen to ınvite statuse giren id :" , result.invitationUid)
+            const invitationStatusResult = await listenToInvitationStatus(result.invitationUid);
+            console.log("Çıkan sonuç :", invitationStatusResult.success);
+            
+            if (invitationStatusResult){
+                const lobbyData = await getLobbyDataByUid(invitationStatusResult.subString);
+                console.log('Lobby Data is' , lobbyData);
+                console.log('LobbyData0',lobbyData);
+                console.log('LobbyData1',lobbyData.data);
+                await setLobbyInfo(lobbyData.data,setLobbyData);
+                setDoesHaveNotification(true);
+                setIsInLobby(true);
+                //setPlayerStatus InLobby
+                updatePlayerStatus("inLobby");
+                deleteInvite(); // can be improvable
+            }else {
+                updatePlayerStatus("idle");
+                setDoesHaveNotification(true);
+                deleteInvite();
+            }
+        } catch (error) {
+            console.error("Error sending invite:", error);
+            showErrorMessage("Failed to send invitation");
         }
     }
 
@@ -53,10 +109,13 @@ const InvitePopup = ({handleInviteClick , handleAfterInvite} ) => {
         setTimeout(() => setSuccesMessage(false),10000)
     }
 
-    function showErrorMessage(){
+    function showErrorMessage(errtext){
         setSuccesMessage(false);
         setErrorMessage(true);
-
+        
+        if (errtext){
+            setErrorText(errtext);
+        }
         setTimeout(() => setErrorMessage(false),10000)
     }
 
@@ -82,7 +141,7 @@ const InvitePopup = ({handleInviteClick , handleAfterInvite} ) => {
                         
                     />
                         <button className='text-white self-center absolute end-12'>
-                            <FaArrowRight onClick={handleInviteSubmit}/>
+                            <FaArrowRight onClick={() => handleInviteSubmit(senderId)}/>
                         </button>
 
                 </div>
@@ -95,7 +154,7 @@ const InvitePopup = ({handleInviteClick , handleAfterInvite} ) => {
 
             {errorMessage && 
             <motion.div className='w-full h-9 bg-Error-red text-Error-text content-center self-center text-center' style={{maxWidth : 408, borderRadius: 25}}>
-                Player Could Not Found
+                {errorText}
             </motion.div>}
     </motion.div>
   )

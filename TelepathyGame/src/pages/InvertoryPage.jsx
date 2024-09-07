@@ -5,7 +5,7 @@ import { Footer } from '../components/Footer';
 import { motion } from 'framer-motion';
 import Inventory from '../components/Inventory';
 import Button from '../components/Button';
-import { getInventorys } from '../FirebaseFunctions';
+import InviteRequestPopup from '../components/InviteRequestPopup';
 
 
 const InvertoryPage = () => {
@@ -15,6 +15,12 @@ const InvertoryPage = () => {
   
   const [selected,SetSelected] = useState("Default")
   const [isSelected,SetIsSelected] = useState(true)
+
+  const [isInvited,setIsInvited] = useState(false);
+
+  function handleInviteReq(){
+    setIsInvited((prevState) => !prevState);
+}
 
   const handleOptionChange = (event) => {
     setNavbarSelect(event.target.value);
@@ -75,6 +81,7 @@ const InvertoryPage = () => {
         <div className={`relative flex w-full -top-24 right-10 ${isSelected ? "opacity-10" : "opacity-100"}`}>
           <Button className="relative w-24 h-7 ml-auto text-sm " buttonText="Select" onClick={handleSelectClick}/>
         </div>
+      {isInvited && <InviteRequestPopup handleInviteReq={handleInviteReq} className={'left-1/4'}/>} 
       </div>
       <AdPlace width={160} height={550} className={"absolute end-6 top-14"} />
       <AdPlace width={100} height={784} className={"absolute top-52 left-1/2 rotate-90"}/>
