@@ -3,7 +3,6 @@
 @tailwind utilities;
 
 body{
-    height: 1024px;
     background: linear-gradient(180deg, #2B1219 0%, #110E13 40%, #040912 100%);
     font-family: 'Montserrat',sans-serif;
 }

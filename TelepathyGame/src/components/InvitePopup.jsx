@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useRef,useEffect } from 'react';
 import { FaArrowRight } from "react-icons/fa";
 import { FaXmark } from "react-icons/fa6";
-import { sendInvite, listenInviteStatus, getUserDataById, listenToInvitationStatus, updatePlayerStatus, getLobbyDataByUid, setLobbyInfo, deleteInvite } from '../FirebaseFunctions';
+import { sendInvite, getUserDataById, listenToInvitationStatus, updatePlayerStatus, getLobbyDataByUid, setLobbyInfo, deleteInvite } from '../FirebaseFunctions';
 
 const InvitePopup = ({handleInviteClick , handleAfterInvite , senderId , setIsInLobby , setDoesHaveNotification , setLobbyData } ) => {
     const inputRef = useRef(null);

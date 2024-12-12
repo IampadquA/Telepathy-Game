@@ -50,7 +50,7 @@ const InvertoryPage = () => {
 
 
   return (
-    <div className='flex flex-col'>
+    <div className='flex flex-col h-screen'>
       <header className='relative flex gap-16 my-8 mx-14'>
         <h1 className='text-txtwh font-bold'>Telepathy Game</h1>
         <Link to="/" className='text-txtsecondary ml-2'>Home</Link>

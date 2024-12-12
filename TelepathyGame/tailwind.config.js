@@ -17,10 +17,22 @@ export default {
           "grey" : "#282828",
           "red" : "#3E191C",
           "text" : "#E3A7A9"
+        },
+        "Design" : {
+          'red' : '#2B1219',
+          'Button' : {
+            'blue' : "#191623",
+            'white' : '#F6F6F6',
+            'red' : '#6A363B'
+          }
         }
+        
       },
       fontFamily: {
-        "Montserrat" : ['Montserrat','sans-serif']
+        "Montserrat" : ['Montserrat','sans-serif'],
+        'Bungee' : ['Bungee', 'sans-serif'],
+        'AlfaSlabOne' : ['Alfa Slab One','Bungee'],
+        'Orbitron' : ['Orbitron','sans-serif']
       }
     },
   },

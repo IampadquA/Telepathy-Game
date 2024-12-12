@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion';
 import Button from './Button';
-import { createLobby, fetchInvtationById, getUserDataByUid, updateInvitationStatus, updatePlayerStatus , setLobbyInfo } from '../FirebaseFunctions';
+import { createLobby, fetchInvtationById, updateInvitationStatus, updatePlayerStatus , setLobbyInfo } from '../FirebaseFunctions';
 import { func } from 'prop-types';
 
 const InviteRequestPopup = ({setIsInvited, InvitationUid , className ,setIsInLobby, setLobbyData }) => {
@@ -41,7 +41,7 @@ const InviteRequestPopup = ({setIsInvited, InvitationUid , className ,setIsInLob
     async function handleInviteAccept() {
         setIsInvited(false);
         console.log('Invitatoin Data is :' , invitationData);
-        const lobbyData = await createLobby(invitationData)
+        const lobbyData = await createLobby(invitationData);
         console.log('LobbyData is :' , lobbyData);    
         await setLobbyInfo(lobbyData,setLobbyData);
         setIsInLobby(true);

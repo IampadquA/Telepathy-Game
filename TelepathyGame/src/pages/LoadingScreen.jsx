@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { fetchLobbyByUserId, updateLobbyStatus } from '../FirebaseFunctions';
+import { updateLobbyStatus } from '../FirebaseFunctions';
 
 export const LoadingScreen = () => {
     const location = useLocation();

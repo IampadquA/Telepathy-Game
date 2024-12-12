@@ -7,9 +7,13 @@ const {
     createLobby,
     deleteLobbyByUid,
     updateLobbyStatus,
-    setPlayerStatus,
     updatePlayerStatus,
     updateInvitationStatus,
+    searchWaitingLobby,
+    getPlayerUidTest,
+    joinTheLobby,
+    addToTheRef,
+    deleteLobbyRef,
 } = require('./FirebaseFunctions/firebasefunctions.js');
 
 exports.getAllPlayerIds = getAllPlayerIds;
@@ -19,6 +23,10 @@ exports.deleteInvite = deleteInvite;
 exports.createLobby = createLobby;
 exports.deleteLobbyByUid = deleteLobbyByUid;
 exports.updateLobbyStatus = updateLobbyStatus;
-exports.setPlayerStatus = setPlayerStatus;
 exports.updatePlayerStatus = updatePlayerStatus;
 exports.updateInvitationStatus = updateInvitationStatus;
+exports.searchWaitingLobby = searchWaitingLobby;
+exports.getPlayerUidTest = getPlayerUidTest;
+exports.joinTheLobby = joinTheLobby;
+exports.addToTheRef = addToTheRef;
+exports.deleteLobbyRef = deleteLobbyRef;

@@ -9,8 +9,7 @@ import InviteRequestPopup from '../components/InviteRequestPopup'
 import LobbyPopup from '../components/LobbyPopup';
 import { Link, useNavigate } from 'react-router-dom'; 
 import { handleAuth , getAllPlayerIds ,
-    fetchLobbyByUserId , getUserDataByUid, listenLobbyStatus ,
-    listenInviteStatus,
+    fetchLobbyByUserId , getUserDataByUid,
     listenToUserStatus,
     setLobbyInfo,
     listenToLobbyStatus,
@@ -211,6 +210,14 @@ import { handleAuth , getAllPlayerIds ,
         setIsLobbyClicked((prevState) => !prevState);
     }
 
+    function handleQuickPlayClick() {
+        if (isInLobby) {
+            navigate("/LoadingPage", { state: { playerUid: playerUid, lobbyData: lobbyData } });
+        } else {
+            navigate("/SearchingPage",  { state: { playerUid: playerUid, playerName: playerName , playerId : playerid } });
+        }
+    }
+
     const handleSubmit = () => {
         if (playerName.trim() !==''){
             console.log('Enter key pressed');
@@ -267,7 +274,7 @@ import { handleAuth , getAllPlayerIds ,
             player2: "",
             inventoryType: "default",
         });
-        console.log('PlayerLeftTheLobby')
+        console.log('PlayerLeftTheLobby');
     }
     
 
@@ -283,7 +290,9 @@ import { handleAuth , getAllPlayerIds ,
             <div className='flex flex-col gap-y-16 self-center items-center' style={{ maxWidth: 1000, maxHeight: "fit-content" }}>
                 <h1 className='text-txtwh text-7xl font-bold text-center'>Telepathy Game</h1>
                 <p className='text-txtsecondary text-base font-normal text-center'>
-                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+                Are you ready to test your telepathic abilities? In this game, logic meets intuition in a thrilling mental challenge! <br /><br />
+                Each round, you choose an item, and your mission is simple: match your choice with your partner's. But beware—there are no clues, only the whispers of your mind to guide you!<br /><br />
+                Remember: The mind is the universe’s greatest mystery... and in this game, you hold the key to unlocking it!<br /><br />
                 </p>
                 <div className='flex gap-2 flex-col items-center w-full' style={{ maxWidth: 580 }}>
                     {!isClickedPlay && 
@@ -341,12 +350,11 @@ import { handleAuth , getAllPlayerIds ,
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ backgroundColor: "#884449" }}
                                     className='w-full overflow-hidden border-borderRed bg-bgblue bg-opacity-50 text-center text-white font-normal text-base' style={{maxWidth: 408,borderWidth: 1}}>{playerName} #{playerid}</motion.button>
-                                    <Link to="/LoadingPage" state={{ playerUid: playerUid, lobbyData : lobbyData }} className='w-full'>
-                                        <motion.button 
-                                        whileHover={{ scale: 1.03 }}
-                                        whileTap={{ backgroundColor: "#884449" }}
-                                        className='w-full h-full overflow-hidden border-borderRed bg-bgblue bg-opacity-50 text-center text-white font-normal text-base' style={{maxWidth: 408,borderWidth: 1}}>QuickPlay</motion.button>
-                                    </Link>
+                                    <motion.button 
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ backgroundColor: "#884449" }}
+                                    onClick={handleQuickPlayClick}
+                                    className='w-full h-full overflow-hidden border-borderRed bg-bgblue bg-opacity-50 text-center text-white font-normal text-base' style={{maxWidth: 408,borderWidth: 1}}>QuickPlay</motion.button>
                             </motion.div>
                             {!isInLobby && 
                             <motion.div 
@@ -375,7 +383,8 @@ import { handleAuth , getAllPlayerIds ,
             {isInvited && <InviteRequestPopup setIsInvited={setIsInvited} InvitationUid={playerStatus} setIsInLobby={setIsInLobby} setLobbyData={setLobbyData}/>} 
             {isLobbyClicked && <LobbyPopup handleLobbyClick={handleLobbyClick} handleAfterInvite={handleAfterInvite} setIsInLobby={setIsInLobby} lobbyData={lobbyData}/>}
             {doesHaveNotification && <NotificationBar text={"Invite Accapted"} />}
-            <AdPlace width={160} height={550} className={"absolute end-6 top-14"} />
+            {//<AdPlace width={160} height={550} className={"absolute end-6 top-14"} />
+            }
             <Footer />
         </div>
     );

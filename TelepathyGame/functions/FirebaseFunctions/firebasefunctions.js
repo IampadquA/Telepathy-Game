@@ -1,5 +1,6 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { data } = require("autoprefixer");
 
 
 if (admin.apps.length === 0){
@@ -82,25 +83,6 @@ exports.sendInvite = functions.https.onCall(async (data, context) => {
             throw err;
         }
         throw new functions.https.HttpsError('unknown', 'Error sending invitation');
-    }
-});
-
-exports.setPlayerStatus = functions.https.onCall(async (data,context) => {
-    const {uid , newStatus} = data;
-
-    if (!uid || !newStatus) {
-        throw new functions.https.HttpsError('invalid-argument', "The function must be called with both 'uid' and 'newStatus' arguments");
-    }
-
-    try{
-        const userDocRef = db.collection('users').doc(uid);
-
-        await userDocRef.update({ status : newStatus});
-
-        return { success: true, message : "Player status updated successfully"};
-    } catch (err){
-        console.error("Error Updating player status", err);
-        throw new functions.https.HttpsError('unknown',"An error occured while updating the player status.");
     }
 });
 
@@ -281,3 +263,180 @@ exports.updateInvitationStatus = functions.https.onCall(async (data, context) =>
       throw new functions.https.HttpsError('internal', 'Failed to update invitation status.');
     }
   });
+
+exports.getPlayerUidTest = functions.https.onCall(async (data,context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('failed-precondition', 'Kullanıcı doğrulaması yapılmamış.');
+  }
+
+  // Kullanıcının UID'si
+  const userUid = context.auth.uid;
+
+  // UID'yi döndür
+  return { userUid: userUid };
+})
+
+exports.searchWaitingLobby = functions.https.onCall(async (data,context) => {
+  const user = context.auth;
+
+  if (!user) {
+    throw new functions.https.HttpsError('failed-precondition', 'unAuth user');
+  }
+
+  try{
+    const waitingLobbiesQuery = db.collection('lobbies')
+            .doc('waitingLobbiesDoc')
+            .collection('waitingLobbies')
+            .where('status', '==', 'waiting')
+            .limit(1); 
+
+    const lobbySnapshot = await waitingLobbiesQuery.get();
+
+    if (lobbySnapshot.empty) {  
+      return { success: false };
+    }
+
+    const lobbyDoc = lobbySnapshot.docs[0];
+    const lobbyRef = lobbyDoc.ref;
+    const lobbyData = lobbyDoc.data();
+    const referencedlobbyPath = lobbyData.lobbyRef.path;
+
+    const referecedLobbyUid = referencedlobbyPath.split('/')[1];
+
+    await db.runTransaction(async (transaction) =>{
+      const lobbyDocData = await transaction.get(lobbyRef);
+
+      if (lobbyDocData.exists && lobbyDocData.data().status === 'waiting'){
+        transaction.update(lobbyRef, {status : 'occupied'});
+      }else {
+        throw new Error('Lobby is not available');
+      }
+    });
+
+    return {
+      success : true,
+      lobbyDocUid : referecedLobbyUid,
+      lobbyRefUid : lobbyDoc.id
+    };
+
+  }catch (err){
+    throw new functions.https.HttpsError('unknown', err.message);
+  }
+
+});
+
+exports.joinTheLobby = functions.https.onCall(async (data, context) => {
+  const user = context.auth
+
+  if(!user){
+    throw new functions.https.HttpsError('failed-precondition','User is not auth');
+  }
+
+  const userId = user.uid;
+  const lobbyUid = data.lobbyUid;
+
+  if (!lobbyUid){
+    throw new functions.https.HttpsError('invalid-argument','invalid lobbyUid');
+  }
+
+  try{
+    let updatedLobbyData;
+
+    await db.runTransaction(async (transaction) => {
+            const lobbyRef = db.collection('lobbies').doc(lobbyUid);
+            const lobbyDoc = await transaction.get(lobbyRef);
+
+            if (!lobbyDoc.exists) {
+                throw new Error('not-found', 'Lobby could not found');
+            }
+
+            let lobbyData = lobbyDoc.data();
+
+            let playerFieldToUpdate = null;
+
+            if (lobbyData.player2 === 'waitingPlayer') {
+                playerFieldToUpdate = 'player2';
+            } else if (lobbyData.player1 === 'waitingPlayer') {
+                playerFieldToUpdate = 'player1';
+            }
+
+            if (!playerFieldToUpdate) {
+                throw new Error('failed-precondition', 'Lobby has not empty field');
+            }
+
+            transaction.update(lobbyRef, {
+                [playerFieldToUpdate]: userId,
+                lobbyStatus: 'foundPlayer'
+            });
+
+          });
+          
+          const updatedLobbyDoc = await db.collection('lobbies').doc(lobbyUid).get();
+
+          if (updatedLobbyDoc.exists) {
+            updatedLobbyData = updatedLobbyDoc.data();
+          }
+        // 5. İşlem başarılı olursa true döndür
+        return { success: true, lobbyData : updatedLobbyData, playerUid : userId };
+  } catch (err){
+      console.error("Transaction failed: ", err.message);
+      throw new functions.https.HttpsError('unknown', err.message);
+  }
+
+});
+
+exports.addToTheRef = functions.https.onCall(async (data,context) => {
+  const lobbyUid = data.lobbyUid;
+
+  if (!lobbyUid) {
+    throw new functions.https.HttpsError('invalid-argument', 'invalid lobbyUid.');
+  }
+
+  try {
+
+    const lobbyRef = db.collection('lobbies').doc(lobbyUid);
+    
+    const waitingLobbiesRef = db.collection('lobbies')
+        .doc('waitingLobbiesDoc')
+        .collection('waitingLobbies');
+
+    const newDocRef = await waitingLobbiesRef.add({
+      lobbyRef: lobbyRef,  
+      status: 'waiting'
+    })
+    
+    return {
+      success : true,
+      docUid: newDocRef.id
+    }
+  } catch (err){
+    throw new functions.https.HttpsError('unknown', err.message);
+  };
+});
+
+exports.deleteLobbyRef = functions.https.onCall(async (data, context) => {
+  const lobbyRefUid = data;
+
+  if (!lobbyRefUid) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid LobbyRefUid.');
+  }
+
+  const lobbyRefDoc = db.collection('lobbies').doc('waitingLobbiesDoc').collection('waitingLobbies').doc(lobbyRefUid);
+
+  try {
+    await db.runTransaction( async (transaction) => {
+      const lobbyDocSnapshot = await transaction.get(lobbyRefDoc);
+
+      if (!lobbyDocSnapshot.exists) {
+        throw new functions.https.HttpsError('not-found', 'Lobi referansı bulunamadı.');
+      }
+
+      transaction.delete(lobbyRefDoc);
+    });
+
+    return { success : true , message : 'Lobby Ref succesfully deleted'};
+  }catch (err){
+    throw new functions.https.HttpsError('unknown',"an error occured while deleting lobby Ref");
+  }
+
+});

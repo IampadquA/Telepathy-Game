@@ -2,8 +2,6 @@ import { collection,getDoc, getDocs, setDoc , updateDoc, doc, query, onSnapshot,
 import { db , auth } from '../firebase-config.js';
 import { signInAnonymously , onAuthStateChanged  } from "firebase/auth";
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { func } from 'prop-types';
-
 
 
 const inventoryTypeCollection = collection(db,"Inventorys")
@@ -66,20 +64,6 @@ export const sendInvite = async (receiverUid) => {
         throw err;
     }
 };
-
-export function listenInviteStatus(InviteUid, callback){
-    const InviteRef = doc(db,'invitations', InviteUid);
-
-    const unsubsribe = onSnapshot(InviteRef, (doc) => {
-        if (doc.exists()) {
-            const status = doc.data().status;
-            callback(status);
-            console.log("Listening Invite Status");
-        }
-    });
-
-    return unsubsribe;
-}
 
 export function listenToUserStatus(playerUid, callback) {
     // Firestore'daki kullanıcının doküman referansını al
@@ -262,6 +246,55 @@ export function listenToLobbyStatus(lobbyUid, callback) {
     });
   
     return unsubscribe;
+};
+
+export function listenToLobbyStatusForMatchMaking(lobbyUid, targetStatus = 'foundPlayer') {
+    return new Promise((resolve, reject) => {
+        if (!lobbyUid) {
+            console.error("Invalid lobbyUid provided.");
+            reject(new Error("Invalid lobbyUid"));
+            return;
+        }
+
+        console.log(`Starting to listen to lobby: ${lobbyUid}`);
+
+        const lobbyRef = doc(db, 'lobbies', lobbyUid);
+
+        const unsubscribe = onSnapshot(lobbyRef, (docSnapshot) => {
+            console.log(`Snapshot received for lobby: ${lobbyUid}`);
+            
+            if (!docSnapshot.exists()) {
+                console.error("Lobby document does not exist.");
+                reject(new Error("Lobby document does not exist"));
+                unsubscribe();
+                return;
+            }
+
+            const lobbyData = docSnapshot.data();
+            const lobbyStatus = lobbyData?.lobbyStatus;
+
+            console.log(`Current lobby status: ${lobbyStatus}`);
+
+            if (lobbyStatus === undefined) {
+                console.error("Lobby status field is missing in the lobby document.");
+                reject(new Error("Lobby status field is missing"));
+                unsubscribe();
+                return;
+            }
+
+            if (lobbyStatus === targetStatus) {
+                console.log(`Target status ${targetStatus} reached`);
+                resolve(lobbyStatus);
+                unsubscribe();
+            } else {
+                console.log(`Waiting for status to change to ${targetStatus}. Current status: ${lobbyStatus}`);
+            }
+        }, (error) => {
+            console.error("Error listening to lobby status:", error);
+            reject(error);
+            unsubscribe();
+        });
+    });
 }
 
 export async function fetchLobbyByUserId(userUid) {
@@ -399,15 +432,127 @@ export async function updateLobbyStatus(lobbyUid,status) {
     }
 }
 
-export function listenLobbyStatus(lobbyUid, callback){
-    const lobbyRef = doc(db,'lobbies', lobbyUid);
+export async function searchWaitingLobby() {
+    const functions = getFunctions();
+    const searchWaitingLobbyFunction = httpsCallable(functions,'searchWaitingLobby');
 
-    const unsubsribe = onSnapshot(lobbyRef, (doc) => {
-        if (doc.exists()) {
-            const status = doc.data().lobbystatus;
-            callback(status);
-        }
-    });
+    try{
+        const result = await searchWaitingLobbyFunction({});
 
-    return unsubsribe;
+        console.log(result.data);
+        return result.data;
+    } catch (err){
+        console.error('Something went wrong', err.message);
+        return;
+    }
 }
+
+export async function callGetPlayerUidTest() {
+    // 1. Firebase'deki test fonksiyonunu çağırıyoruz
+    const functions = getFunctions();
+    const getPlayerUidTest = httpsCallable(functions, 'getPlayerUidTest');
+
+    try {
+        // 2. Fonksiyonu çağırıp sonucunu bekliyoruz
+        const result = await getPlayerUidTest();
+
+        // 3. Sonuçtan kullanıcı UID'sini alıyoruz
+        console.log("Kullanıcının UID'si:", result.data.userUid);
+        return result;
+    } catch (error) {
+        console.error("An error acured while calling ", error);
+    }
+}
+
+export async function joinToTheLobby(lobbyUid) {
+    const functions = getFunctions();
+    const joinToTheLobbyFuntion = httpsCallable(functions, 'joinTheLobby');
+
+    try{
+        const result = await joinToTheLobbyFuntion({lobbyUid});
+        
+        console.log('Succesfully joined the lobby' , result.data.success)
+
+        return result.data;
+    }catch(err){
+        console.error('An error acuered while joining the lobby',err);
+    };
+};
+
+async function addToTheRef(lobbyUid) {
+    const functions = getFunctions();
+    const addToTheRefFuntion = httpsCallable(functions, 'addToTheRef');
+
+    try{
+        const result = await addToTheRefFuntion({lobbyUid});
+
+        return result.data;
+    }catch(err){
+        console.error('An error acuered while addingthe the reference lobby',err);
+    };
+}
+
+export async function createEmpthyLobby() {
+    try{
+        const lobbyData = await createLobby();
+
+        const lobbyId = lobbyData.lobbyId;
+
+        if (!lobbyId){
+            throw new Error('Lobby could not created,there is no lobby uid');
+        }
+
+        const result = await addToTheRef(lobbyId);
+
+        return {
+            success : true,
+            lobbyRefUid : result.docUid,
+            lobbyUid : lobbyData.lobbyId
+        }
+    } catch(err){
+        console.error('There is an issuea when creating lobby', err.message);
+        return {success : false};
+    }
+}
+
+export async function checkPlayerJoin(lobbyUid) {
+    
+    if (!lobbyUid) {
+        console.error("Invalid Lobby Uid.");
+        return false;
+    }
+
+    const lobbyRef = doc(db, 'lobbies', lobbyUid);
+    const lobbyDoc = await getDoc(lobbyRef);
+
+    if (!lobbyDoc.exists()) {
+        console.error("Lobby could not found.");
+        return false;
+    }
+
+    const lobbyData = lobbyDoc.data();
+
+    const player1 = lobbyData?.player1;
+    const player2 = lobbyData?.player2;
+
+    if (player1 === "waitingPlayer" || player2 === "waitingPlayer") {
+        return false;
+    }
+
+    return { success : true , player : player2};
+}
+
+export async function deleteLobbyRef(lobbyRefUid) {
+    const functions = getFunctions();
+    const deleteLobbyRefFunction = httpsCallable(functions, 'deleteLobbyRef');
+
+
+    try {
+        const result = await deleteLobbyRefFunction(lobbyRefUid);
+
+        return result.data; 
+
+    } catch (error) {
+        console.error("An error occurred while deleting the lobby Ref:", error);
+    };
+};

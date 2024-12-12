@@ -6,6 +6,8 @@ import './index.css'
 import {createBrowserRouter,RouterProvider} from "react-router-dom";
 import InvertoryPage from './pages/InvertoryPage.jsx'
 import { LoadingScreen } from './pages/LoadingScreen.jsx'
+import SearchingPage from './pages/SearchingPage.jsx'
+import TelepathyPage from './pages/TelepathyPage.jsx'
 
 const router = createBrowserRouter([{
   path: "/",
@@ -20,10 +22,16 @@ const router = createBrowserRouter([{
     path:'/LoadingPage',
     element: <LoadingScreen/>
   },
+  {
+    path:"/SearchingPage",
+    element: <SearchingPage/>
+  },
+  {
+    path:"/Telepathy",
+    element: <TelepathyPage/>
+  }
 ])
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
     <RouterProvider router={router}/>
-  </React.StrictMode>,
 )
