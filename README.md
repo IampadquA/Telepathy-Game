@@ -1,4 +1,4 @@
-TelepathyGame
+**TelepathyGame**
 Project Overview
 TelepathyGame is a collaborative web-based game that challenges players to predict their partner's next choice, creating an engaging and interactive experience.
 Technologies Used
@@ -9,7 +9,7 @@ Animations: Framer Motion
 Backend: Firebase Functions, Node.js
 Database: Firebase
 
-Key Features
+**Key Features**
 
 Custom-designed UI/UX (created in Figma)
 Lobby system
